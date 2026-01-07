@@ -872,17 +872,21 @@ void V_CalcRefdef (void)
 	//FIXME: noclip_anglehack is set on the server, so in a nonlocal game this won't work.
 	{
 		float steptime;
+		float limit;
 
 		steptime = cl.time - cl.oldtime;
 		if (steptime < 0)
 			//FIXME	I_Error ("steptime < 0");
 			steptime = 0;
+		limit = cl.viewheight;
+		if (limit < 18)
+			limit = 18;
 
 		oldz += steptime * 80;
 		if (oldz > ent->origin[2])
 			oldz = ent->origin[2];
-		if (ent->origin[2] - oldz > 12)
-			oldz = ent->origin[2] - 12;
+		if (ent->origin[2] - oldz > limit)
+			oldz = ent->origin[2] - limit;
 		r_refdef.vieworg[2] += oldz - ent->origin[2];
 		view->origin[2] += oldz - ent->origin[2];
 	}
