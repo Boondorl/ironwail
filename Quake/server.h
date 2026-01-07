@@ -181,6 +181,7 @@ typedef enum
 	MOVETYPE_FLYMISSILE			= 9,	// extra size to monsters
 	MOVETYPE_BOUNCE				= 10,
 	MOVETYPE_GIB				= 11,	// 2021 rerelease gibs
+	MOVETYPE_BOUNCEMISSILE		= 12,	// [Standalone] Backport this from Quake 2.
 } emovetype_t;
 
 // edict->solid values

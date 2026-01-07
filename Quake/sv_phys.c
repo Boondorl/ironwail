@@ -407,7 +407,7 @@ trace_t SV_PushEntity (edict_t *ent, vec3_t push)
 
 	VectorAdd (ent->v.origin, push, end);
 
-	if (ent->v.movetype == MOVETYPE_FLYMISSILE)
+	if (ent->v.movetype == MOVETYPE_FLYMISSILE || ent->v.movetype == MOVETYPE_BOUNCEMISSILE)
 		trace = SV_Move (ent->v.origin, ent->v.mins, ent->v.maxs, end, MOVE_MISSILE, ent);
 	else if (ent->v.solid == SOLID_TRIGGER || ent->v.solid == SOLID_NOT)
 	// only clip against bmodels
@@ -1142,7 +1142,7 @@ void SV_Physics_Toss (edict_t *ent)
 	if (ent->free)
 		return;
 
-	if (ent->v.movetype == MOVETYPE_BOUNCE)
+	if (ent->v.movetype == MOVETYPE_BOUNCE || ent->v.movetype == MOVETYPE_BOUNCEMISSILE)
 		backoff = 1.5;
 	else
 		backoff = 1;
@@ -1152,7 +1152,7 @@ void SV_Physics_Toss (edict_t *ent)
 // stop if on ground
 	if (trace.plane.normal[2] > 0.7)
 	{
-		if (ent->v.velocity[2] < 60 || ent->v.movetype != MOVETYPE_BOUNCE)
+		if (ent->v.velocity[2] < 60 || (ent->v.movetype != MOVETYPE_BOUNCE && ent->v.movetype != MOVETYPE_BOUNCEMISSILE))
 		{
 			ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
 			ent->v.groundentity = EDICT_TO_PROG(trace.ent);
@@ -1271,6 +1271,7 @@ void SV_Physics (void)
 		else if (ent->v.movetype == MOVETYPE_TOSS
 		|| ent->v.movetype == MOVETYPE_GIB
 		|| ent->v.movetype == MOVETYPE_BOUNCE
+		|| ent->v.movetype == MOVETYPE_BOUNCEMISSILE
 		|| ent->v.movetype == MOVETYPE_FLY
 		|| ent->v.movetype == MOVETYPE_FLYMISSILE)
 			SV_Physics_Toss (ent);

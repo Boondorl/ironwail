@@ -746,6 +746,7 @@ const char *ED_FieldValueString (edict_t *ed, ddef_t *d)
 		MOVETYPE_CASE (MOVETYPE_FLYMISSILE);
 		MOVETYPE_CASE (MOVETYPE_BOUNCE);
 		MOVETYPE_CASE (MOVETYPE_GIB);
+		MOVETYPE_CASE (MOVETYPE_BOUNCEMISSILE);
 		#undef MOVETYPE_CASE
 		default:
 			break;
