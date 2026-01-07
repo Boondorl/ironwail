@@ -878,7 +878,7 @@ static void Host_CheckAutosave (void)
 	sv.autosave.prev_health = sv_player->v.health;
 
 	// Track attacking
-	if (sv_player->v.button0)
+	if (sv_player->v.button0 || sv_player->v.button1)
 		sv.autosave.shoot_time = qcvm->time;
 
 	// Time spent with cheats active doesn't count
