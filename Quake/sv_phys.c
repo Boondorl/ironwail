@@ -842,14 +842,17 @@ Only used by players
 ======================
 */
 #define	STEPSIZE	18
+#define AIRSTEPSIZE	6
 void SV_WalkMove (edict_t *ent)
 {
 	vec3_t		upmove, downmove;
 	vec3_t		oldorg, oldvel;
 	vec3_t		nosteporg, nostepvel;
-	int			clip;
+	vec3_t		nowallfricvel, stepmove;
+	int			clip, origclip;
 	int			oldonground;
-	trace_t		steptrace, downtrace;
+	trace_t		steptrace, origsteptrace, downtrace;
+	float		stepsize, stepmulti;
 
 //
 // do a regular slide move unless it looks like you ran into a step
@@ -860,22 +863,36 @@ void SV_WalkMove (edict_t *ent)
 	VectorCopy (ent->v.origin, oldorg);
 	VectorCopy (ent->v.velocity, oldvel);
 
-	clip = SV_FlyMove (ent, host_frametime, &steptrace);
+	origclip = SV_FlyMove (ent, host_frametime, &origsteptrace);
 
-	if ( !(clip & 2) )
+	if ( !(origclip & 2) )
 		return;		// move didn't block on a step
-
-	if (!oldonground && ent->v.waterlevel == 0)
-		return;		// don't stair up while jumping
 
 	if (ent->v.movetype != MOVETYPE_WALK)
 		return;		// gibbed by a trigger
 
 	if (sv_nostep.value)
+	{
+		if ( origclip & 2 )
+			SV_WallFriction (ent, &origsteptrace);
 		return;
+	}
 
-	if ( (int)sv_player->v.flags & FL_WATERJUMP )
-		return;
+	stepsize = STEPSIZE;
+	if (!oldonground)
+	{
+		// [Standalone] Dynamically adjust the step height based on the distance from the floor, that
+		// way you're less likely to clip stairs you jumped right next to.
+		stepsize = AIRSTEPSIZE;
+		VectorCopy (oldorg, downmove);
+		downmove[2] -= STEPSIZE;
+		downtrace = SV_Move (oldorg, ent->v.mins, ent->v.maxs, downmove, MOVE_NOMONSTERS, ent);
+		if (downtrace.fraction < 1.0 && downtrace.plane.normal[2] > 0.7)
+		{
+			stepmulti = (oldorg[2] - downtrace.endpos[2]) / STEPSIZE;
+			stepsize += (STEPSIZE - AIRSTEPSIZE) * (1.0 - stepmulti);
+		}
+	}
 
 	VectorCopy (ent->v.origin, nosteporg);
 	VectorCopy (ent->v.velocity, nostepvel);
@@ -887,8 +904,8 @@ void SV_WalkMove (edict_t *ent)
 
 	VectorCopy (vec3_origin, upmove);
 	VectorCopy (vec3_origin, downmove);
-	upmove[2] = STEPSIZE;
-	downmove[2] = -STEPSIZE + oldvel[2]*host_frametime;
+	upmove[2] = stepsize;
+	downmove[2] = -stepsize - 2; // [Standalone] Give a small amount of leeway if stepping over a ramp edge.
 
 // move up
 	SV_PushEntity (ent, upmove);	// FIXME: don't link?
@@ -912,18 +929,56 @@ void SV_WalkMove (edict_t *ent)
 
 // extra friction based on view angle
 	if ( clip & 2 )
+	{
+		VectorCopy (ent->v.velocity, nowallfricvel);
 		SV_WallFriction (ent, &steptrace);
-
+	}
+		
 // move down
 	downtrace = SV_PushEntity (ent, downmove);	// FIXME: don't link?
+	VectorSubtract (ent->v.origin, oldorg, stepmove);
 
-	if (downtrace.plane.normal[2] > 0.7)
+	if (downtrace.plane.normal[2] > 0.7 && (!clip || DotProduct(downtrace.plane.normal, stepmove) >= 0.03125))
 	{
-		if (ent->v.solid == SOLID_BSP)
+		stepsize = AIRSTEPSIZE;
+		if (downtrace.ent->v.solid == SOLID_BSP)
 		{
-			ent->v.flags =	(int)ent->v.flags | FL_ONGROUND;
-			ent->v.groundentity = EDICT_TO_PROG(downtrace.ent);
+			stepsize = STEPSIZE;
+			// [Standalone] Only consider the player on the ground if they aren't traveling upwards.
+			if (oldvel[2] <= 0)
+			{
+				ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
+				ent->v.groundentity = EDICT_TO_PROG (downtrace.ent);
+			}
 		}
+		// [Standalone] If we clipped a wall after a successful step, try and see if it's
+		// another step first before cutting off the velocity.
+		if (clip & 2)
+		{
+			VectorCopy (oldvel, stepmove);
+			stepmove[2] = 0;
+			stepmulti = VectorLength(stepmove);
+			if (stepmulti > 0)
+			{
+				stepmulti = 1 / stepmulti;
+				stepmove[0] = ent->v.origin[0] + stepmove[0] * stepmulti * ent->v.size[0] * 0.5;
+				stepmove[1] = ent->v.origin[1] + stepmove[1] * stepmulti * ent->v.size[1] * 0.5;
+				stepmove[2] = ent->v.origin[2] + stepsize;
+
+				VectorCopy (ent->v.origin, upmove);
+				upmove[2] += stepsize;
+				steptrace = SV_Move (upmove, ent->v.mins, ent->v.maxs, stepmove, MOVE_NOMONSTERS, ent);
+				if (steptrace.fraction == 1.0)
+				{
+					ent->v.velocity[0] = nowallfricvel[0];
+					ent->v.velocity[1] = nowallfricvel[1];
+				}
+			}
+		}
+		// [Standalone] Make sure to preserve any upward momentum so stairs aren't cutting
+		// off jumps.
+		if (oldvel[2] > 0)
+			ent->v.velocity[2] = oldvel[2];
 	}
 	else
 	{
@@ -932,6 +987,9 @@ void SV_WalkMove (edict_t *ent)
 // cause the player to hop up higher on a slope too steep to climb
 		VectorCopy (nosteporg, ent->v.origin);
 		VectorCopy (nostepvel, ent->v.velocity);
+
+		if (origclip & 2)
+			SV_WallFriction (ent, &origsteptrace);
 	}
 }
 
