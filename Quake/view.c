@@ -868,7 +868,7 @@ void V_CalcRefdef (void)
 //johnfitz
 
 // smooth out stair step ups
-	if (!noclip_anglehack && cl.onground && ent->origin[2] - oldz > 0) //johnfitz -- added exception for noclip
+	if (!noclip_anglehack && cl.onground && ent->origin[2] - oldz != 0) //johnfitz -- added exception for noclip
 	//FIXME: noclip_anglehack is set on the server, so in a nonlocal game this won't work.
 	{
 		float steptime;
@@ -882,11 +882,22 @@ void V_CalcRefdef (void)
 		if (limit < 18)
 			limit = 18;
 
-		oldz += steptime * 80;
 		if (oldz > ent->origin[2])
-			oldz = ent->origin[2];
-		if (ent->origin[2] - oldz > limit)
-			oldz = ent->origin[2] - limit;
+		{
+			oldz -= steptime * 80;
+			if (oldz < ent->origin[2])
+				oldz = ent->origin[2];
+			if (oldz - ent->origin[2] > limit)
+				oldz = ent->origin[2] + limit;
+		}
+		else
+		{
+			oldz += steptime * 80;
+			if (oldz > ent->origin[2])
+				oldz = ent->origin[2];
+			if (ent->origin[2] - oldz > limit)
+				oldz = ent->origin[2] - limit;
+		}
 		r_refdef.vieworg[2] += oldz - ent->origin[2];
 		view->origin[2] += oldz - ent->origin[2];
 	}

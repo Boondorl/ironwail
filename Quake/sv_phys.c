@@ -870,9 +870,6 @@ void SV_WalkMove (edict_t *ent, float grav)
 
 	origclip = SV_FlyMove (ent, host_frametime, &origsteptrace, oldonground ? grav : 0);
 
-	if ( !(origclip & 2) )
-		return;		// move didn't block on a step
-
 	if (ent->v.movetype != MOVETYPE_WALK)
 		return;		// gibbed by a trigger
 
@@ -882,6 +879,32 @@ void SV_WalkMove (edict_t *ent, float grav)
 			SV_WallFriction (ent, &origsteptrace);
 		return;
 	}
+
+	if ( !(origclip & 2) )	// move didn't block on a step
+	{
+		if (origclip || !oldonground || ((int)ent->v.flags & FL_ONGROUND) || oldvel[2] > 0)
+			return;
+
+		// [Standalone] Try and move down a step if you're in the air.
+		VectorCopy (ent->v.origin, nosteporg);
+		VectorCopy (ent->v.velocity, nostepvel);
+
+		VectorCopy (vec3_origin, downmove);
+		downmove[2] = -STEPSIZE;
+
+		downtrace = SV_PushEntity(ent, downmove);
+		if (downtrace.plane.normal[2] > 0.7 && downtrace.ent->v.solid == SOLID_BSP)
+		{
+			ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
+			ent->v.groundentity = EDICT_TO_PROG (downtrace.ent);
+		}
+		else
+		{
+			VectorCopy (nosteporg, ent->v.origin);
+			VectorCopy (nostepvel, ent->v.velocity);
+		}
+		return;
+	}	
 
 	stepsize = STEPSIZE;
 	if (!oldonground && grav >= 0.03125)
@@ -992,6 +1015,23 @@ void SV_WalkMove (edict_t *ent, float grav)
 // cause the player to hop up higher on a slope too steep to climb
 		VectorCopy (nosteporg, ent->v.origin);
 		VectorCopy (nostepvel, ent->v.velocity);
+
+		if (oldonground && !((int)ent->v.flags & FL_ONGROUND) && oldvel[2] <= 0)
+		{
+			// [Standalone] Try and move down a step if you're in the air.
+			downmove[2] = -STEPSIZE;
+			downtrace = SV_PushEntity (ent, downmove);
+			if (downtrace.plane.normal[2] > 0.7 && downtrace.ent->v.solid == SOLID_BSP)
+			{
+				ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
+				ent->v.groundentity = EDICT_TO_PROG (downtrace.ent);
+			}
+			else
+			{
+				VectorCopy (nosteporg, ent->v.origin);
+				VectorCopy (nostepvel, ent->v.velocity);
+			}
+		}
 
 		if (origclip & 2)
 			SV_WallFriction (ent, &origsteptrace);
