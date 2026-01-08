@@ -62,6 +62,7 @@ typedef struct edict_s
 	qboolean	sendinterval;		/* johnfitz -- send time until nextthink to client for better lerp timing */
 	float		oldframe;
 	float		oldthinktime;
+	float		crouch;				// [Standalone] Track if the client traversed stairs this frame.
 
 	int					showbboxframe;		/* last render frame this entity was highlighted by r_showbboxes & co */
 	showbboxflags_t		showbboxflags;		/* highlighted entity link types */

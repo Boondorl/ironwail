@@ -897,6 +897,7 @@ void SV_WalkMove (edict_t *ent, float grav)
 		{
 			ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
 			ent->v.groundentity = EDICT_TO_PROG (downtrace.ent);
+			ent->crouch += oldorg[2] - ent->v.origin[2];
 		}
 		else
 		{
@@ -1007,6 +1008,7 @@ void SV_WalkMove (edict_t *ent, float grav)
 		// off jumps.
 		if (oldvel[2] > 0)
 			ent->v.velocity[2] = oldvel[2];
+		ent->crouch += oldorg[2] - ent->v.origin[2];
 	}
 	else
 	{
@@ -1025,6 +1027,7 @@ void SV_WalkMove (edict_t *ent, float grav)
 			{
 				ent->v.flags = (int)ent->v.flags | FL_ONGROUND;
 				ent->v.groundentity = EDICT_TO_PROG (downtrace.ent);
+				ent->crouch += oldorg[2] - ent->v.origin[2];
 			}
 			else
 			{

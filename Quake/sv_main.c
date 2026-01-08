@@ -1079,6 +1079,7 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		if ((int)ent->v.ammo_cells & 0xFF00) bits |= SU_CELLS2;
 		if (bits & SU_WEAPONFRAME && (int)ent->v.weaponframe & 0xFF00) bits |= SU_WEAPONFRAME2;
 		if (bits & SU_WEAPON && ent->alpha != ENTALPHA_DEFAULT) bits |= SU_WEAPONALPHA; //for now, weaponalpha = client entity alpha
+		if (ent->crouch) bits |= SU_CROUCH;
 		if (bits >= 65536) bits |= SU_EXTEND1;
 		if (bits >= 16777216) bits |= SU_EXTEND2;
 	}
@@ -1160,6 +1161,11 @@ void SV_WriteClientdataToMessage (edict_t *ent, sizebuf_t *msg)
 		MSG_WriteByte (msg, (int)ent->v.weaponframe >> 8);
 	if (bits & SU_WEAPONALPHA)
 		MSG_WriteByte (msg, ent->alpha); //for now, weaponalpha = client entity alpha
+	if (bits & SU_CROUCH)
+	{
+		MSG_WriteCoord(msg, ent->crouch, sv.protocolflags);
+		ent->crouch = 0;
+	}
 	//johnfitz
 
 	// Hack: Alkaline 1.1 uses bit flags to store the active weapon,

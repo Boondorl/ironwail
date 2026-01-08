@@ -863,6 +863,8 @@ void CL_ParseClientdata (void)
 		cl.viewent.alpha = MSG_ReadByte();
 	else
 		cl.viewent.alpha = ENTALPHA_DEFAULT;
+	if (bits & SU_CROUCH)
+		cl.crouch += MSG_ReadCoord(cl.protocolflags);
 	//johnfitz
 
 	CL_SetHudStat (STAT_WEAPONFRAME);

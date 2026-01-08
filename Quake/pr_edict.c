@@ -250,6 +250,7 @@ void ED_Free (edict_t *ed)
 	ed->v.solid = 0;
 	ed->alpha = ENTALPHA_DEFAULT; //johnfitz -- reset alpha for next entity
 	ed->scale = ENTSCALE_DEFAULT;
+	ed->crouch = 0;
 
 	ed->freetime = qcvm->time;
 }
