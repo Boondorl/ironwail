@@ -155,27 +155,34 @@ R_SetupEntityTransform -- johnfitz -- set up transform part of lerpdata
 */
 void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 {
-	float blend;
+	float blendm, blenda;
 	vec3_t d;
 	int i;
 
 	// if LERP_RESETMOVE, kill any lerps in progress
 	if (e->lerpflags & LERP_RESETMOVE)
 	{
-		e->movelerpstart = 0;
+		e->movelerpstart = e->anglelerpstart = 0;
 		VectorCopy (e->origin, e->previousorigin);
 		VectorCopy (e->origin, e->currentorigin);
 		VectorCopy (e->angles, e->previousangles);
 		VectorCopy (e->angles, e->currentangles);
 		e->lerpflags -= LERP_RESETMOVE;
 	}
-	else if (!VectorCompare (e->origin, e->currentorigin) || !VectorCompare (e->angles, e->currentangles)) // origin/angles changed, start new lerp
+	else // origin/angles changed, start new lerp
 	{
-		e->movelerpstart = cl.time;
-		VectorCopy (e->currentorigin, e->previousorigin);
-		VectorCopy (e->origin,  e->currentorigin);
-		VectorCopy (e->currentangles, e->previousangles);
-		VectorCopy (e->angles,  e->currentangles);
+		if (!VectorCompare (e->origin, e->currentorigin))
+		{
+			e->movelerpstart = cl.time;
+			VectorCopy (e->currentorigin, e->previousorigin);
+			VectorCopy (e->origin, e->currentorigin);
+		}
+		if (!VectorCompare (e->angles, e->currentangles))
+		{
+			e->anglelerpstart = cl.time;
+			VectorCopy (e->currentangles, e->previousangles);
+			VectorCopy (e->angles, e->currentangles);
+		}
 	}
 
 	//set up values
@@ -183,15 +190,21 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	{
 		float s = (cls.demoplayback && cls.demospeed < 0.f) ? -1.f : 1.f;
 		if (e->lerpflags & LERP_FINISH)
-			blend = CLAMP (0.0f, (float)(cl.time - e->movelerpstart) / (e->lerpfinish - e->movelerpstart), 1.0f);
+		{
+			blendm = CLAMP (0.0f, (float)(cl.time - e->movelerpstart) / (e->lerpfinish - e->movelerpstart), 1.0f);
+			blenda = CLAMP (0.0f, (float)(cl.time - e->anglelerpstart) / (e->lerpfinish - e->anglelerpstart), 1.0f);
+		}
 		else
-			blend = CLAMP (0.0f, (float)(cl.time - e->movelerpstart) / 0.1f * s, 1.0f);
+		{
+			blendm = CLAMP (0.0f, (float)(cl.time - e->movelerpstart) / 0.1f * s, 1.0f);
+			blenda = CLAMP (0.0f, (float)(cl.time - e->anglelerpstart) / 0.1f * s, 1.0f);
+		}
 
 		//translation
 		VectorSubtract (e->currentorigin, e->previousorigin, d);
-		lerpdata->origin[0] = e->previousorigin[0] + d[0] * blend;
-		lerpdata->origin[1] = e->previousorigin[1] + d[1] * blend;
-		lerpdata->origin[2] = e->previousorigin[2] + d[2] * blend;
+		lerpdata->origin[0] = e->previousorigin[0] + d[0] * blendm;
+		lerpdata->origin[1] = e->previousorigin[1] + d[1] * blendm;
+		lerpdata->origin[2] = e->previousorigin[2] + d[2] * blendm;
 
 		//rotation
 		VectorSubtract (e->currentangles, e->previousangles, d);
@@ -200,9 +213,9 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 			if (d[i] > 180)  d[i] -= 360;
 			if (d[i] < -180) d[i] += 360;
 		}
-		lerpdata->angles[0] = e->previousangles[0] + d[0] * blend;
-		lerpdata->angles[1] = e->previousangles[1] + d[1] * blend;
-		lerpdata->angles[2] = e->previousangles[2] + d[2] * blend;
+		lerpdata->angles[0] = e->previousangles[0] + d[0] * blenda;
+		lerpdata->angles[1] = e->previousangles[1] + d[1] * blenda;
+		lerpdata->angles[2] = e->previousangles[2] + d[2] * blenda;
 	}
 	else //don't lerp
 	{

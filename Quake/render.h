@@ -81,6 +81,7 @@ typedef struct entity_s
 	short					currentpose;	//johnfitz -- animation lerping
 //	short					futurepose;		//johnfitz -- animation lerping
 	float					movelerpstart;	//johnfitz -- transform lerping
+	float					anglelerpstart; // [Standalone] Decouple this from the movement lerping.
 	vec3_t					previousorigin;	//johnfitz -- transform lerping
 	vec3_t					currentorigin;	//johnfitz -- transform lerping
 	vec3_t					previousangles;	//johnfitz -- transform lerping
