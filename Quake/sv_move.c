@@ -288,7 +288,7 @@ void SV_NewChaseDir (edict_t *actor, edict_t *enemy, float dist)
 	float		tdir, olddir, turnaround;
 
 	olddir = anglemod( (int)(actor->v.ideal_yaw/45)*45 );
-	turnaround = anglemod(olddir - 180);
+	turnaround = !(rand() & 3) ? DI_NODIR : anglemod(olddir - 180); // [Standalone] Have a chance to turn around regardless.
 
 	deltax = enemy->v.origin[0] - actor->v.origin[0];
 	deltay = enemy->v.origin[1] - actor->v.origin[1];
