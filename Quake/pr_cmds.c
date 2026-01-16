@@ -191,11 +191,28 @@ static void PF_setorigin (void)
 {
 	edict_t	*e;
 	float	*org;
+	vec3_t  oldorg;
 
 	e = G_EDICT(OFS_PARM0);
 	org = G_VECTOR(OFS_PARM1);
+	VectorCopy (e->v.origin, oldorg);
 	VectorCopy (org, e->v.origin);
 	SV_LinkEdict (e, false);
+	// [Standalone] For monsters, consider setorigin calls from themselves to be steps.
+	// If something else is moving them, consider it a teleport and remove all built
+	// up steps to instantly warp them.
+	if (e->v.movetype == MOVETYPE_STEP)
+	{
+		if (PROG_TO_EDICT (pr_global_struct->self) == e)
+		{
+			VectorSubtract (e->v.origin, oldorg, oldorg);
+			VectorAdd (e->stepmove, oldorg, e->stepmove);
+		}
+		else
+		{
+			VectorCopy (vec3_origin, e->stepmove);
+		}
+	}
 }
 
 

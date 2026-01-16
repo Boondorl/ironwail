@@ -63,6 +63,7 @@ typedef struct edict_s
 	float		oldframe;
 	float		oldthinktime;
 	float		crouch;				// [Standalone] Track if the client traversed stairs this frame.
+	vec3_t		stepmove;			// [Standalone] Amount of movement from stepping on this frame.
 
 	int					showbboxframe;		/* last render frame this entity was highlighted by r_showbboxes & co */
 	showbboxflags_t		showbboxflags;		/* highlighted entity link types */

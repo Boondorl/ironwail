@@ -145,6 +145,8 @@ qboolean SV_movestep (edict_t *ent, vec3_t move, qboolean relink)
 					return false;	// swim monster left water
 
 				VectorCopy (trace.endpos, ent->v.origin);
+				VectorSubtract (ent->v.origin, oldorg, neworg);
+				VectorAdd (ent->stepmove, neworg, ent->stepmove);
 				if (relink)
 					SV_LinkEdict (ent, true);
 				return true;
@@ -180,6 +182,7 @@ qboolean SV_movestep (edict_t *ent, vec3_t move, qboolean relink)
 		if ( (int)ent->v.flags & FL_PARTIALGROUND )
 		{
 			VectorAdd (ent->v.origin, move, ent->v.origin);
+			VectorAdd (ent->stepmove, move, ent->stepmove);
 			if (relink)
 				SV_LinkEdict (ent, true);
 			ent->v.flags = (int)ent->v.flags & ~FL_ONGROUND;
@@ -198,6 +201,8 @@ qboolean SV_movestep (edict_t *ent, vec3_t move, qboolean relink)
 		if ( (int)ent->v.flags & FL_PARTIALGROUND )
 		{	// entity had floor mostly pulled out from underneath it
 			// and is trying to correct
+			VectorSubtract (ent->v.origin, oldorg, neworg);
+			VectorAdd (ent->stepmove, neworg, ent->stepmove);
 			if (relink)
 				SV_LinkEdict (ent, true);
 			return true;
@@ -214,6 +219,8 @@ qboolean SV_movestep (edict_t *ent, vec3_t move, qboolean relink)
 	ent->v.groundentity = EDICT_TO_PROG(trace.ent);
 
 // the move is ok
+	VectorSubtract (ent->v.origin, oldorg, neworg);
+	VectorAdd (ent->stepmove, neworg, ent->stepmove);
 	if (relink)
 		SV_LinkEdict (ent, true);
 	return true;
@@ -234,7 +241,7 @@ facing it.
 void PF_changeyaw (void);
 qboolean SV_StepDirection (edict_t *ent, float yaw, float dist)
 {
-	vec3_t		move, oldorigin;
+	vec3_t		move, oldorigin, oldstep;
 	float		delta;
 
 	ent->v.ideal_yaw = yaw;
@@ -246,12 +253,14 @@ qboolean SV_StepDirection (edict_t *ent, float yaw, float dist)
 	move[2] = 0;
 
 	VectorCopy (ent->v.origin, oldorigin);
+	VectorCopy (ent->stepmove, oldstep);
 	if (SV_movestep (ent, move, false))
 	{
 		delta = ent->v.angles[YAW] - ent->v.ideal_yaw;
 		if (delta > 45 && delta < 315)
 		{		// not turned far enough, so don't take the step
 			VectorCopy (oldorigin, ent->v.origin);
+			VectorCopy (oldstep, ent->stepmove);
 		}
 		SV_LinkEdict (ent, true);
 		return true;

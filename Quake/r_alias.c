@@ -162,20 +162,23 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	// if LERP_RESETMOVE, kill any lerps in progress
 	if (e->lerpflags & LERP_RESETMOVE)
 	{
-		e->movelerpstart = e->anglelerpstart = 0;
-		VectorCopy (e->origin, e->previousorigin);
-		VectorCopy (e->origin, e->currentorigin);
+		e->movelerpstart = e->anglelerpstart = cl.time;
 		VectorCopy (e->angles, e->previousangles);
 		VectorCopy (e->angles, e->currentangles);
-		e->lerpflags -= LERP_RESETMOVE;
+		VectorCopy (e->origin, e->currentorigin);
+		VectorCopy (e->msg_step, e->currentstep);
+		VectorCopy (vec3_origin, e->currentmovedelta);
+		e->movefrac = 0;
+		e->lerpflags &= ~(LERP_NEWSTEP|LERP_RESETMOVE);
 	}
 	else // origin/angles changed, start new lerp
 	{
-		if (!VectorCompare (e->origin, e->currentorigin))
+		if (e->lerpflags & LERP_NEWSTEP)
 		{
 			e->movelerpstart = cl.time;
-			VectorCopy (e->currentorigin, e->previousorigin);
 			VectorCopy (e->origin, e->currentorigin);
+			VectorCopy (e->msg_step, e->currentstep);
+			e->lerpflags &= ~LERP_NEWSTEP;
 		}
 		if (!VectorCompare (e->angles, e->currentangles))
 		{
@@ -201,10 +204,9 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 		}
 
 		//translation
-		VectorSubtract (e->currentorigin, e->previousorigin, d);
-		lerpdata->origin[0] = e->previousorigin[0] + d[0] * blendm;
-		lerpdata->origin[1] = e->previousorigin[1] + d[1] * blendm;
-		lerpdata->origin[2] = e->previousorigin[2] + d[2] * blendm;
+		lerpdata->origin[0] = e->currentorigin[0] + e->currentmovedelta[0] * e->movefrac + e->currentstep[0] * blendm;
+		lerpdata->origin[1] = e->currentorigin[1] + e->currentmovedelta[1] * e->movefrac + e->currentstep[1] * blendm;
+		lerpdata->origin[2] = e->currentorigin[2] + e->currentmovedelta[2] * e->movefrac + e->currentstep[2] * blendm;
 
 		//rotation
 		VectorSubtract (e->currentangles, e->previousangles, d);
@@ -219,7 +221,7 @@ void R_SetupEntityTransform (entity_t *e, lerpdata_t *lerpdata)
 	}
 	else //don't lerp
 	{
-		VectorCopy (e->origin, lerpdata->origin);
+		VectorAdd (e->origin, e->msg_step, lerpdata->origin);
 		VectorCopy (e->angles, lerpdata->angles);
 	}
 

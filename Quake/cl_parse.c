@@ -547,6 +547,7 @@ void CL_ParseUpdate (int bits)
 // shift the known values for interpolation
 	VectorCopy (ent->msg_origins[0], ent->msg_origins[1]);
 	VectorCopy (ent->msg_angles[0], ent->msg_angles[1]);
+	ent->lerpflags |= LERP_NEWDELTA;
 
 	if (bits & U_ORIGIN1)
 		ent->msg_origins[0][0] = MSG_ReadCoord (cl.protocolflags);
@@ -577,10 +578,7 @@ void CL_ParseUpdate (int bits)
 
 	//johnfitz -- lerping for movetype_step entities
 	if (bits & U_STEP)
-	{
 		ent->lerpflags |= LERP_MOVESTEP;
-		ent->forcelink = true;
-	}
 	else
 		ent->lerpflags &= ~LERP_MOVESTEP;
 	//johnfitz
@@ -607,6 +605,18 @@ void CL_ParseUpdate (int bits)
 		}
 		else
 			ent->lerpflags &= ~LERP_FINISH;
+
+		if (bits & U_STEPMOVE)
+		{
+			ent->lerpflags |= LERP_NEWSTEP;
+			ent->msg_step[0] = MSG_ReadCoord (cl.protocolflags);
+			ent->msg_step[1] = MSG_ReadCoord (cl.protocolflags);
+			ent->msg_step[2] = MSG_ReadCoord (cl.protocolflags);
+		}
+		else
+		{
+			VectorCopy (vec3_origin, ent->msg_step);
+		}
 	}
 	else if (cl.protocol == PROTOCOL_NETQUAKE)
 	{

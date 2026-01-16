@@ -508,7 +508,7 @@ void CL_RelinkEntities (void)
 	entity_t	*ent;
 	int			i, j;
 	float		frac, f, d;
-	vec3_t		delta;
+	vec3_t		delta, neworig;
 	float		bobjrotate;
 	dlight_t	*dl;
 
@@ -568,13 +568,19 @@ void CL_RelinkEntities (void)
 			// so move to the final spot
 			VectorCopy (ent->msg_origins[0], ent->origin);
 			VectorCopy (ent->msg_angles[0], ent->angles);
+			VectorCopy (vec3_origin, ent->msg_step);
+			VectorCopy (vec3_origin, ent->currentmovedelta);
+			ent->movefrac = 0;
 		}
 		else
 		{	// if the delta is large, assume a teleport and don't lerp
+			// [Standalone] For monsters that moved via stepping, don't take their
+			// step into account (that will be handled in their interpolation).
+			VectorSubtract (ent->msg_origins[0], ent->msg_step, neworig);
 			f = frac;
 			for (j=0 ; j<3 ; j++)
 			{
-				delta[j] = ent->msg_origins[0][j] - ent->msg_origins[1][j];
+				delta[j] = neworig[j] - ent->msg_origins[1][j];
 				if (delta[j] > 100 || delta[j] < -100)
 				{
 					f = 1;		// assume a teleportation, not a motion
@@ -582,14 +588,25 @@ void CL_RelinkEntities (void)
 				}
 			}
 
-			//johnfitz -- don't cl_lerp entities that will be r_lerped
-			if (r_lerpmove.value && (ent->lerpflags & LERP_MOVESTEP))
-				f = 1;
-			//johnfitz
+			ent->movefrac = f;
+			if (ent->lerpflags & LERP_NEWDELTA)
+			{
+				VectorAdd (ent->currentorigin, ent->currentmovedelta, ent->currentorigin);
+				VectorCopy (delta, ent->currentmovedelta);
+			}
 
 		// interpolate the origin and angles
 			for (j=0 ; j<3 ; j++)
 			{
+				// [Standalone] If r_lerpmoving, we need to do some more complex logic to interpolate
+				// it over a 0.1s time period.
+				if (r_lerpmove.value && (ent->lerpflags & LERP_MOVESTEP) && !(ent->lerpflags & LERP_RESETMOVE))
+				{
+					ent->origin[j] = ent->msg_origins[1][j];
+					ent->angles[j] = ent->msg_angles[0][j];
+					continue;
+				}
+
 				ent->origin[j] = ent->msg_origins[1][j] + f*delta[j];
 
 				d = ent->msg_angles[0][j] - ent->msg_angles[1][j];
@@ -600,6 +617,7 @@ void CL_RelinkEntities (void)
 				ent->angles[j] = ent->msg_angles[1][j] + f*d;
 			}
 		}
+		ent->lerpflags &= ~LERP_NEWDELTA;
 
 		if (ent->forcelink || ent->lerpflags & LERP_RESETMOVE)
 			CL_ResetTrail (ent);

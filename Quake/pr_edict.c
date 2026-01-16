@@ -251,6 +251,7 @@ void ED_Free (edict_t *ed)
 	ed->alpha = ENTALPHA_DEFAULT; //johnfitz -- reset alpha for next entity
 	ed->scale = ENTSCALE_DEFAULT;
 	ed->crouch = 0;
+	VectorCopy (vec3_origin, ed->stepmove);
 
 	ed->freetime = qcvm->time;
 }

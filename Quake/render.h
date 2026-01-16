@@ -45,6 +45,8 @@ typedef struct lightcache_s {
 #define LERP_RESETANIM2	(1<<2) //set this and previous flag to disable anim lerping for two anim frames
 #define LERP_RESETMOVE	(1<<3) //disable movement lerping until next origin/angles change
 #define LERP_FINISH		(1<<4) //use lerpfinish time from server update instead of assuming interval of 0.1
+#define LERP_NEWSTEP	(1<<5) // [Standalone] Track when the step lerping should be reset.
+#define LERP_NEWDELTA	(1<<6) // [Standalone] A new message was received, so update the delta.
 //johnfitz
 
 typedef struct entity_s
@@ -81,9 +83,12 @@ typedef struct entity_s
 	short					currentpose;	//johnfitz -- animation lerping
 //	short					futurepose;		//johnfitz -- animation lerping
 	float					movelerpstart;	//johnfitz -- transform lerping
-	float					anglelerpstart; // [Standalone] Decouple this from the movement lerping.
-	vec3_t					previousorigin;	//johnfitz -- transform lerping
 	vec3_t					currentorigin;	//johnfitz -- transform lerping
+	vec3_t					msg_step;		// [Standalone] Track movement from steps for better lerping.
+	vec3_t					currentstep;
+	vec3_t					currentmovedelta;
+	float					movefrac;
+	float					anglelerpstart; // [Standalone] Decouple this from the movement lerping.
 	vec3_t					previousangles;	//johnfitz -- transform lerping
 	vec3_t					currentangles;	//johnfitz -- transform lerping
 
