@@ -292,7 +292,8 @@ int SV_FlyMove (edict_t *ent, float time, trace_t *steptrace, float grav)
 				grav = 0;
 			}
 		}
-		if (!trace.plane.normal[2])
+		// [Standalone] Use an epsilon here to track slight leanings of walls.
+		if (fabsf(trace.plane.normal[2]) < 0.0001)
 		{
 			blocked |= 2;		// step
 			if (steptrace)
