@@ -133,14 +133,15 @@ void SV_UserFriction (void)
 		return;
 
 // if the leading edge is over a dropoff, increase friction
-	start[0] = stop[0] = origin[0] + vel[0]/speed*16;
-	start[1] = stop[1] = origin[1] + vel[1]/speed*16;
-	start[2] = origin[2] + sv_player->v.mins[2];
+	start[0] = stop[0] = origin[0] + (vel[0]/speed) * sv_player->v.size[0] * 0.5;
+	start[1] = stop[1] = origin[1] + (vel[1]/speed) * sv_player->v.size[1] * 0.5;
+	start[2] = origin[2];
 	stop[2] = start[2] - 34;
 
-	trace = SV_Move (start, vec3_origin, vec3_origin, stop, true, sv_player);
+	// [Standalone] This needs to have a hitbox so it can properly detect clip brushes.
+	trace = SV_Move (start, sv_player->v.mins, sv_player->v.maxs, stop, MOVE_NOMONSTERS, sv_player);
 
-	if (trace.fraction == 1.0)
+	if (!trace.startsolid && trace.fraction == 1.0)
 		friction = sv_friction.value*sv_edgefriction.value;
 	else
 		friction = sv_friction.value;
