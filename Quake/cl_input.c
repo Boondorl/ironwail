@@ -240,7 +240,7 @@ float CL_KeyState (kbutton_t *key)
 cvar_t	cl_upspeed = {"cl_upspeed","200",CVAR_NONE};
 cvar_t	cl_forwardspeed = {"cl_forwardspeed","200", CVAR_ARCHIVE};
 cvar_t	cl_backspeed = {"cl_backspeed","200", CVAR_ARCHIVE};
-cvar_t	cl_sidespeed = {"cl_sidespeed","350",CVAR_NONE};
+cvar_t	cl_sidespeed = {"cl_sidespeed","200",CVAR_NONE};
 
 cvar_t	cl_movespeedkey = {"cl_movespeedkey","2.0",CVAR_NONE};
 
@@ -373,6 +373,7 @@ void CL_BaseMove (usercmd_t *cmd)
 		cmd->forwardmove *= cl_movespeedkey.value;
 		cmd->sidemove *= cl_movespeedkey.value;
 		cmd->upmove *= cl_movespeedkey.value;
+		cmd->running = true;
 	}
 }
 
@@ -432,6 +433,9 @@ void CL_SendMove (const usercmd_t *cmd)
 		if (in_altattack.state & 3)
 			bits |= 4;
 		in_altattack.state &= ~2;
+
+		if (cmd->running)
+			bits |= 8;
 
 		MSG_WriteByte (&buf, bits);
 

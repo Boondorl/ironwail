@@ -275,6 +275,9 @@ typedef struct
 	float	forwardmove;
 	float	sidemove;
 	float	upmove;
+
+	// [Standalone] Track if the client is running to know which max speed to clamp it to.
+	qboolean running;
 } usercmd_t;
 
 #endif	/* _QUAKE_PROTOCOL_H */

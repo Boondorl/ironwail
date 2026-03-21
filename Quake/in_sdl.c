@@ -1058,12 +1058,13 @@ static float IN_FlickStickEasing (float frac)
 IN_JoyMove
 ================
 */
-void IN_JoyMove (usercmd_t *cmd)
+void IN_JoyMove (usercmd_t *cmd, float *forward, float *side)
 {
 	float	speed;
 	joyaxis_t moveRaw, moveDeadzone, moveEased;
 	joyaxis_t lookRaw, lookDeadzone, lookEased;
 	extern	cvar_t	sv_maxspeed;
+	extern	cvar_t	sv_walkspeed;
 
 	if (!joy_active_controller)
 		return;
@@ -1080,18 +1081,13 @@ void IN_JoyMove (usercmd_t *cmd)
 	moveEased = IN_ApplyEasing(moveDeadzone, joy_exponent_move.value);
 	lookEased = IN_ApplyEasing(lookDeadzone, joy_exponent.value);
 
-	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0 || cl_forwardspeed.value >= sv_maxspeed.value))
-		// running
+	if ((in_speed.state & 1) ^ (cl_alwaysrun.value != 0.0))
 		speed = sv_maxspeed.value;
-	else if (cl_forwardspeed.value >= sv_maxspeed.value)
-		// not running, with always run = vanilla
-		speed = q_min(sv_maxspeed.value, cl_forwardspeed.value / cl_movespeedkey.value);
 	else
-		// not running, with always run = off or quakespasm
-		speed = cl_forwardspeed.value;
+		speed = sv_walkspeed.value;
 
-	cmd->sidemove += speed * moveEased.x;
-	cmd->forwardmove -= speed * moveEased.y;
+	*side = speed * moveEased.x;
+	*forward = -speed * moveEased.y;
 
 	if (CL_InCutscene ())
 		return;
@@ -1304,9 +1300,9 @@ void IN_MouseMove(usercmd_t *cmd)
 	}
 }
 
-void IN_Move(usercmd_t *cmd)
+void IN_Move(usercmd_t *cmd, float *joyforward, float *joyside)
 {
-	IN_JoyMove(cmd);
+	IN_JoyMove(cmd, joyforward, joyside);
 	IN_GyroMove(cmd);
 	IN_MouseMove(cmd);
 }

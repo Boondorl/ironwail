@@ -162,6 +162,7 @@ typedef struct
 								// first frame
 	usercmd_t	cmd;			// last command sent to the server
 	usercmd_t	pendingcmd;		// accumulated state from mice+joysticks.
+	float		joymoveforward, joymoveside; // [Standalone] Joystick movement needs to be tracked separately since it shouldn't be accumulated.
 
 // information for local display
 	int			stats[MAX_CL_STATS];	// health, etc

@@ -3315,14 +3315,6 @@ static qboolean M_Options_IsGyroId (int id)
 	return (unsigned int)(id - GYRO_OPTIONS_BEGIN) < GYRO_OPTIONS_NUMITEMS;
 }
 
-enum
-{
-	ALWAYSRUN_OFF = 0,
-	ALWAYSRUN_VANILLA,
-	ALWAYSRUN_QUAKESPASM,
-	ALWAYSRUN_ITEMS
-};
-
 #define	SLIDER_RANGE		10
 
 #define OPTIONS_LISTOFS		36
@@ -3639,7 +3631,6 @@ static void M_CycleCvar (cvar_t *cvar, int minval, int maxval, int dir)
 
 void M_AdjustSliders (int dir)
 {
-	int	curr_alwaysrun, target_alwaysrun;
 	float	f, l;
 
 	M_ThrottledSound ("misc/menu3.wav");
@@ -3724,33 +3715,7 @@ void M_AdjustSliders (int dir)
 		break;
 
 	case OPT_ALWAYSRUN:	// always run
-		if (cl_alwaysrun.value)
-			curr_alwaysrun = ALWAYSRUN_QUAKESPASM;
-		else if (cl_forwardspeed.value > 200)
-			curr_alwaysrun = ALWAYSRUN_VANILLA;
-		else
-			curr_alwaysrun = ALWAYSRUN_OFF;
-			
-		target_alwaysrun = (ALWAYSRUN_ITEMS + curr_alwaysrun + dir) % ALWAYSRUN_ITEMS;
-			
-		if (target_alwaysrun == ALWAYSRUN_VANILLA)
-		{
-			Cvar_SetValue ("cl_alwaysrun", 0);
-			Cvar_SetValue ("cl_forwardspeed", 400);
-			Cvar_SetValue ("cl_backspeed", 400);
-		}
-		else if (target_alwaysrun == ALWAYSRUN_QUAKESPASM)
-		{
-			Cvar_SetValue ("cl_alwaysrun", 1);
-			Cvar_SetValue ("cl_forwardspeed", 200);
-			Cvar_SetValue ("cl_backspeed", 200);
-		}
-		else // ALWAYSRUN_OFF
-		{
-			Cvar_SetValue ("cl_alwaysrun", 0);
-			Cvar_SetValue ("cl_forwardspeed", 200);
-			Cvar_SetValue ("cl_backspeed", 200);
-		}
+		Cvar_SetValueQuick (&cl_alwaysrun, cl_alwaysrun.value ? 0.0f : 1.0f);
 		break;
 
 	case OPT_VIEWBOB:	// view bob+roll
@@ -4372,9 +4337,7 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_ALWAYSRUN:
 		if (cl_alwaysrun.value)
-			M_Print (x, y, "QuakeSpasm");
-		else if (cl_forwardspeed.value > 200.0)
-			M_Print (x, y, "Vanilla");
+			M_Print (x, y, "On");
 		else
 			M_Print (x, y, "Off");
 		break;

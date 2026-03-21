@@ -81,7 +81,7 @@ qboolean IN_EmulatedCharEvents (void);
 
 enum keydevice_t IN_GetLastActiveDeviceType (void);
 
-void IN_Move (usercmd_t *cmd);
+void IN_Move (usercmd_t *cmd, float *joyforward, float *joyside);
 // add additional movement on top of the keyboard move cmd
 
 void IN_ClearStates (void);

@@ -165,6 +165,8 @@ SV_Accelerate
 ==============
 */
 cvar_t	sv_maxspeed = {"sv_maxspeed", "320", CVAR_NOTIFY|CVAR_SERVERINFO};
+// [Standalone] Walking needs to be clamped separately to avoid speed boosts from strafe walking.
+cvar_t	sv_walkspeed = {"sv_walkspeed", "200", CVAR_NOTIFY|CVAR_SERVERINFO};
 cvar_t	sv_accelerate = {"sv_accelerate", "10", CVAR_NONE};
 void SV_Accelerate (float wishspeed, const vec3_t wishdir)
 {
@@ -227,7 +229,7 @@ void SV_WaterMove (void)
 {
 	int		i;
 	vec3_t	wishvel;
-	float	speed, newspeed, wishspeed, addspeed, accelspeed;
+	float	speed, newspeed, wishspeed, addspeed, accelspeed, maxspeed;
 
 //
 // user intentions
@@ -242,11 +244,12 @@ void SV_WaterMove (void)
 	else
 		wishvel[2] += cmd.upmove;
 
+	maxspeed = cmd.running ? sv_maxspeed.value : sv_walkspeed.value;
 	wishspeed = VectorLength(wishvel);
-	if (wishspeed > sv_maxspeed.value)
+	if (wishspeed > maxspeed)
 	{
-		VectorScale (wishvel, sv_maxspeed.value/wishspeed, wishvel);
-		wishspeed = sv_maxspeed.value;
+		VectorScale (wishvel, maxspeed/wishspeed, wishvel);
+		wishspeed = maxspeed;
 	}
 	wishspeed *= 0.7;
 
@@ -304,6 +307,8 @@ new, alternate noclip. old noclip is still handled in SV_AirMove
 */
 void SV_NoclipMove (void)
 {
+	float maxspeed;
+
 	AngleVectors (sv_player->v.v_angle, forward, right, up);
 
 	velocity[0] = forward[0]*cmd.forwardmove + right[0]*cmd.sidemove;
@@ -311,10 +316,11 @@ void SV_NoclipMove (void)
 	velocity[2] = forward[2]*cmd.forwardmove + right[2]*cmd.sidemove;
 	velocity[2] += cmd.upmove*2; //doubled to match running speed
 
-	if (VectorLength (velocity) > sv_maxspeed.value)
+	maxspeed = cmd.running ? sv_maxspeed.value : sv_walkspeed.value;
+	if (VectorLength (velocity) > maxspeed)
 	{
 		VectorNormalize (velocity);
-		VectorScale (velocity, sv_maxspeed.value, velocity);
+		VectorScale (velocity, maxspeed, velocity);
 	}
 }
 
@@ -327,7 +333,7 @@ void SV_AirMove (void)
 {
 	int			i;
 	vec3_t		wishvel, wishdir;
-	float		wishspeed;
+	float		wishspeed, maxspeed;
 	float		fmove, smove;
 
 	AngleVectors (sv_player->v.angles, forward, right, up);
@@ -349,10 +355,11 @@ void SV_AirMove (void)
 
 	VectorCopy (wishvel, wishdir);
 	wishspeed = VectorNormalize(wishdir);
-	if (wishspeed > sv_maxspeed.value)
+	maxspeed = cmd.running ? sv_maxspeed.value : sv_walkspeed.value;
+	if (wishspeed > maxspeed)
 	{
-		VectorScale (wishvel, sv_maxspeed.value/wishspeed, wishvel);
-		wishspeed = sv_maxspeed.value;
+		VectorScale (wishvel, maxspeed/wishspeed, wishvel);
+		wishspeed = maxspeed;
 	}
 
 	if ( sv_player->v.movetype == MOVETYPE_NOCLIP)
@@ -468,6 +475,7 @@ void SV_ReadClientMove (usercmd_t *move)
 	host_client->edict->v.button0 = bits & 1;
 	host_client->edict->v.button2 = (bits & 2)>>1;
 	host_client->edict->v.button1 = (bits & 4)>>2;
+	move->running = (bits & 8)>>3;
 
 	i = MSG_ReadByte ();
 	if (i)

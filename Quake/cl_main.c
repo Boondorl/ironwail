@@ -818,7 +818,7 @@ void CL_AccumulateCmd (void)
 		CL_AdjustAngles ();
 
 		//accumulate movement from other devices
-		IN_Move (&cl.pendingcmd);
+		IN_Move (&cl.pendingcmd, &cl.joymoveforward, &cl.joymoveside);
 	}
 }
 
@@ -840,8 +840,8 @@ void CL_SendCmd (void)
 		CL_BaseMove (&cmd);
 
 	// allow mice or other external controllers to add to the move
-		cmd.forwardmove	+= cl.pendingcmd.forwardmove;
-		cmd.sidemove	+= cl.pendingcmd.sidemove;
+		cmd.forwardmove	+= cl.pendingcmd.forwardmove + cl.joymoveforward;
+		cmd.sidemove	+= cl.pendingcmd.sidemove + cl.joymoveside;
 		cmd.upmove		+= cl.pendingcmd.upmove;
 
 	// send the unreliable message
@@ -850,6 +850,7 @@ void CL_SendCmd (void)
 	else
 		CL_SendMove (NULL);
 	memset(&cl.pendingcmd, 0, sizeof(cl.pendingcmd));
+	cl.joymoveforward = cl.joymoveside = 0.0f;
 
 	if (cls.demoplayback)
 	{
